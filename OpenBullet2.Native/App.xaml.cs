@@ -19,6 +19,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using OpenBullet2.Core.Models.Proxies;
 
 namespace OpenBullet2.Native
 {
@@ -64,9 +65,13 @@ namespace OpenBullet2.Native
 
             // Load the configs
             var configService = serviceProvider.GetService<ConfigService>();
-            configService.ReloadConfigs().Wait();
+            configService.ReloadConfigsAsync().Wait();
 
             AutocompletionProvider.Init();
+
+            // Start the job monitor at the start of the application,
+            // otherwise it will only be started when navigating to the page
+            _ = serviceProvider.GetService<JobMonitorService>();
         }
 
         private void ConfigureServices(IServiceCollection services)
@@ -100,6 +105,7 @@ namespace OpenBullet2.Native
             services.AddSingleton<UpdateService>();
             services.AddSingleton<ConfigService>();
             services.AddSingleton<ProxyReloadService>();
+            services.AddSingleton<ProxyCheckOutputFactory>();
             services.AddSingleton<JobFactoryService>();
             services.AddSingleton<JobManagerService>();
             services.AddSingleton<JobMonitorService>();

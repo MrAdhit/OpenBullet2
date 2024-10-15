@@ -1,0 +1,15 @@
+services:
+    openbullet2:
+        image: 'openbullet/openbullet2:latest'
+        container_name: openbullet2
+        restart: unless-stopped
+        volumes:
+        # Change UserData to the location of where you want UserData folder to be placed
+        # This currently assumes your on linux and want the folder in the same location as the docker-compose file
+        # You can set a windows dir like 'C:/OB2/UserData/:/app/UserData/' but it will always be 'local dir:docker dir'
+            - './UserData:/app/UserData/'
+        ports:
+            - '8069:5000'
+
+volumes:
+    UserData:

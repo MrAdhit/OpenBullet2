@@ -24,6 +24,7 @@ namespace OpenBullet2.Native.Views.Dialogs
 
             logRTB.Font = new System.Drawing.Font("Consolas", 10);
             logRTB.BackColor = System.Drawing.Color.FromArgb(22, 22, 22);
+            logRTB.HandleCreated += (_, _) => FixAutoWordSelection(logRTB);
 
             if (logger is null)
             {
@@ -41,11 +42,20 @@ namespace OpenBullet2.Native.Views.Dialogs
             {
                 logRTB.SelectionStart = logRTB.TextLength;
                 logRTB.ScrollToCaret();
+                logRTB.ClearUndoHistory();
             }
             catch
             {
-
+                // ignored
             }
+        }
+        
+        private void FixAutoWordSelection(System.Windows.Forms.RichTextBox rtb)
+        {
+            // Stupid ass workaround because WinForms RichTextBox is broken
+            // https://stackoverflow.com/questions/3678620/c-sharp-richtextbox-selection-problem
+            rtb.AutoWordSelection = true;
+            rtb.AutoWordSelection = false;
         }
 
         #region Search
@@ -138,7 +148,7 @@ namespace OpenBullet2.Native.Views.Dialogs
         }
         #endregion
     }
-
+    
     public class BotLogDialogViewModel : ViewModelBase
     {
         private string searchString = string.Empty;

@@ -11,6 +11,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using ProxyType = RuriLib.Models.Proxies.ProxyType;
+using RuriLib.Helpers;
 
 namespace RuriLib.Blocks.Puppeteer.Browser
 {
@@ -18,12 +19,12 @@ namespace RuriLib.Blocks.Puppeteer.Browser
     public static class Methods
     {
         [Block("Opens a new puppeteer browser", name = "Open Browser")]
-        public static async Task PuppeteerOpenBrowser(BotData data)
+        public static async Task PuppeteerOpenBrowser(BotData data, string extraCmdLineArgs = "")
         {
             data.Logger.LogHeader();
 
             // Check if there is already an open browser
-            var oldBrowser = data.TryGetObject<PuppeteerSharp.Browser>("puppeteer");
+            var oldBrowser = data.TryGetObject<IBrowser>("puppeteer");
             if (oldBrowser is not null && !oldBrowser.IsClosed)
             {
                 data.Logger.Log("The browser is already open, close it if you want to open a new browser", LogColors.DarkSalmon);
@@ -31,6 +32,19 @@ namespace RuriLib.Blocks.Puppeteer.Browser
             }
 
             var args = data.ConfigSettings.BrowserSettings.CommandLineArgs;
+
+            // Extra command line args (to have dynamic args via variables)
+            if (!string.IsNullOrWhiteSpace(extraCmdLineArgs))
+            {
+                args += ' ' + extraCmdLineArgs;
+            }
+
+            // If it's running in docker, currently it runs under root, so add the --no-sandbox otherwise chrome won't work
+            if (Utils.IsDocker())
+            {
+                args += " --no-sandbox";
+            }
+
             if (data.Proxy != null && data.UseProxy)
             {
                 if (data.Proxy.Type == ProxyType.Http || !data.Proxy.NeedsAuthentication)
@@ -54,6 +68,7 @@ namespace RuriLib.Blocks.Puppeteer.Browser
             {
                 Args = new string[] { args },
                 ExecutablePath = data.Providers.PuppeteerBrowser.ChromeBinaryLocation,
+                IgnoredDefaultArgs = new string[] { "--disable-extensions", "--enable-automation" },
                 Headless = data.ConfigSettings.BrowserSettings.Headless,
                 DefaultViewport = null // This is important
             };
@@ -130,7 +145,13 @@ namespace RuriLib.Blocks.Puppeteer.Browser
             data.Logger.LogHeader();
 
             var browser = GetBrowser(data);
-            var page = (await browser.PagesAsync())[index];
+            
+            // Workaround https://github.com/hardkoded/puppeteer-sharp/issues/1587
+            await browser.GetVersionAsync();
+            
+            var pages = await browser.PagesAsync();
+            var page = pages[index];
+            
             await page.BringToFrontAsync();
             SetPageAndFrame(data, page);
 
@@ -173,25 +194,25 @@ namespace RuriLib.Blocks.Puppeteer.Browser
             data.Logger.Log($"Went forward to the next visited page", LogColors.DarkSalmon);
         }
 
-        private static PuppeteerSharp.Browser GetBrowser(BotData data)
-            => data.TryGetObject<PuppeteerSharp.Browser>("puppeteer") ?? throw new Exception("The browser is not open!");
+        private static IBrowser GetBrowser(BotData data)
+            => data.TryGetObject<IBrowser>("puppeteer") ?? throw new Exception("The browser is not open!");
 
-        private static PuppeteerSharp.Page GetPage(BotData data)
-            => data.TryGetObject<PuppeteerSharp.Page>("puppeteerPage") ?? throw new Exception("No pages open!");
+        private static IPage GetPage(BotData data)
+            => data.TryGetObject<IPage>("puppeteerPage") ?? throw new Exception("No pages open!");
 
         private static void SwitchToMainFramePrivate(BotData data)
             => data.SetObject("puppeteerFrame", GetPage(data).MainFrame);
 
-        private static void SetPageAndFrame(BotData data, PuppeteerSharp.Page page)
+        private static void SetPageAndFrame(BotData data, IPage page)
         {
-            data.SetObject("puppeteerPage", page);
+            data.SetObject("puppeteerPage", page, false);
             SwitchToMainFramePrivate(data);
         }
 
         private static void StopYoveProxyInternalServer(BotData data)
             => data.TryGetObject<ProxyClient>("puppeteer.yoveproxy")?.Dispose();
 
-        private static async Task SetPageLoadingOptions(BotData data, PuppeteerSharp.Page page)
+        private static async Task SetPageLoadingOptions(BotData data, IPage page)
         {
             await page.SetRequestInterceptionAsync(true);
             page.Request += (sender, e) =>

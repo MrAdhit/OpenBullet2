@@ -13,17 +13,70 @@ namespace RuriLib.Models.Configs
 {
     public class Config
     {
-        public string Id { get; set; }
+        /// <summary>
+        /// The unique ID of the config.
+        /// </summary>
+        public required string Id { get; set; }
+
+        /// <summary>
+        /// Whether the config was downloaded from a remote source and should not
+        /// be edited to avoid synchronization issues.
+        /// </summary>
         public bool IsRemote { get; set; } = false;
+
+        /// <summary>
+        /// The current mode of the config.
+        /// </summary>
         public ConfigMode Mode { get; set; } = ConfigMode.Stack;
+
+        /// <summary>
+        /// The metadata of the config.
+        /// </summary>
         public ConfigMetadata Metadata { get; set; } = new ConfigMetadata();
+
+        /// <summary>
+        /// The config's settings.
+        /// </summary>
         public ConfigSettings Settings { get; set; } = new ConfigSettings();
+
+        /// <summary>
+        /// The markdown body of the readme.
+        /// </summary>
         public string Readme { get; set; } = "Type some **markdown** here";
         
+        /// <summary>
+        /// The blocks stack.
+        /// </summary>
         public List<BlockInstance> Stack { get; set; } = new List<BlockInstance>();
+
+        /// <summary>
+        /// The LoliCode script.
+        /// </summary>
         public string LoliCodeScript { get; set; } = "";
+
+        /// <summary>
+        /// The LoliCode script that gets executed once, before anything else.
+        /// </summary>
+        public string StartupLoliCodeScript { get; set; } = "";
+
+        /// <summary>
+        /// The LoliScript code of legacy configs.
+        /// </summary>
         public string LoliScript { get; set; } = "";
+
+        /// <summary>
+        /// The C# script that gets executed once, before anything else.
+        /// </summary>
+        public string StartupCSharpScript { get; set; } = "";
+
+        /// <summary>
+        /// The C# script for configs that were converted to C#.
+        /// </summary>
         public string CSharpScript { get; set; } = "";
+
+        /// <summary>
+        /// The bytes of the DLL for a compiled config.
+        /// </summary>
         public byte[] DLLBytes { get; set; } = Array.Empty<byte>();
 
         // Hashes used to check if the config was saved
@@ -35,11 +88,6 @@ namespace RuriLib.Models.Configs
 
         [JsonIgnore]
         public List<(BlockInstance, int)> DeletedBlocksHistory { get; set; } = new List<(BlockInstance, int)>();
-
-        public Config()
-        {
-            Id = Guid.NewGuid().ToString();
-        }
 
         public void ChangeMode(ConfigMode newMode)
         {
@@ -66,7 +114,7 @@ namespace RuriLib.Models.Configs
         }
 
         /// <summary>
-        /// Checks if the config has only blocks or also additional C# code
+        /// Checks if the config has only blocks or also additional C# code.
         /// </summary>
         public bool HasCSharpCode()
         {
@@ -76,8 +124,8 @@ namespace RuriLib.Models.Configs
                 {
                     ConfigMode.CSharp => true,
                     ConfigMode.DLL => true,
-                    ConfigMode.Stack => Stack.Any(b => IsDangerousBlock(b)),
-                    ConfigMode.LoliCode => Loli2StackTranspiler.Transpile(LoliCodeScript).Any(b => IsDangerousBlock(b)),
+                    ConfigMode.Stack => Stack.Any(IsDangerousBlock),
+                    ConfigMode.LoliCode => Loli2StackTranspiler.Transpile(LoliCodeScript).Any(IsDangerousBlock),
                     ConfigMode.Legacy => false,
                     _ => throw new NotImplementedException(),
                 };

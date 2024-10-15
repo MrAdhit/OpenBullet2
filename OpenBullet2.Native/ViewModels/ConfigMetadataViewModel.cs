@@ -30,7 +30,7 @@ namespace OpenBullet2.Native.ViewModels
             get => Config?.Metadata.Author;
             set
             {
-                Config.Metadata.Category = value;
+                Config.Metadata.Author = value;
                 OnPropertyChanged();
             }
         }
@@ -61,7 +61,7 @@ namespace OpenBullet2.Native.ViewModels
             OnPropertyChanged(nameof(Icon));
         }
 
-        public async Task SetIconFromUrl(string url)
+        public async Task SetIconFromUrlAsync(string url)
         {
             using var client = new HttpClient();
             using var response = await client.GetAsync(url);

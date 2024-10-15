@@ -3,9 +3,7 @@ using RuriLib.Extensions;
 using RuriLib.Helpers.CSharp;
 using RuriLib.Helpers.LoliCode;
 using RuriLib.Models.Blocks.Custom.Keycheck;
-using RuriLib.Models.Blocks.Parameters;
 using RuriLib.Models.Blocks.Settings;
-using RuriLib.Models.Conditions.Comparisons;
 using RuriLib.Models.Configs;
 using System;
 using System.Collections.Generic;
@@ -85,12 +83,11 @@ namespace RuriLib.Models.Blocks.Custom
             base.FromLC(ref script, ref lineNumber);
 
             using var reader = new StringReader(script);
-            string line, lineCopy;
 
-            while ((line = reader.ReadLine()) != null)
+            while (reader.ReadLine() is { } line)
             {
                 line = line.Trim();
-                lineCopy = line;
+                var lineCopy = line;
                 lineNumber++;
 
                 if (string.IsNullOrWhiteSpace(line))
@@ -198,7 +195,7 @@ namespace RuriLib.Models.Blocks.Custom
                     writer.Write("else if (");
                 }
 
-                var conditions = keychain.Keys.Select(k => CSharpWriter.ConvertKey(k));
+                var conditions = keychain.Keys.Select(CSharpWriter.ConvertKey);
 
                 var chainedCondition = keychain.Mode switch
                 {

@@ -88,7 +88,7 @@ namespace OpenBullet2.Native.ViewModels
             CreateCollection();
         }
 
-        public async Task Create(ConfigForCreationDto dto)
+        public async Task CreateAsync(ConfigForCreationDto dto)
         {
             // Create it in the repo
             var fileName = FileUtils.ReplaceInvalidFileNameChars($"{dto.Name}.opk");
@@ -99,7 +99,7 @@ namespace OpenBullet2.Native.ViewModels
                 filePath = FileUtils.GetFirstAvailableFileName(filePath);
             }
 
-            var newConfig = await configRepo.Create(Path.GetFileNameWithoutExtension(filePath));
+            var newConfig = await configRepo.CreateAsync(Path.GetFileNameWithoutExtension(filePath));
             newConfig.Metadata.Name = dto.Name;
             newConfig.Metadata.Category = dto.Category;
             newConfig.Metadata.Author = dto.Author;
@@ -126,21 +126,21 @@ namespace OpenBullet2.Native.ViewModels
             ConfigsCollection.Remove(vm);
         }
 
-        public async Task Save(ConfigViewModel vm)
+        public Task Save(ConfigViewModel vm)
         {
             if (vm.IsRemote)
             {
                 throw new Exception("You cannot save remote configs");
             }
 
-            await configRepo.Save(vm.Config);
+            return configRepo.SaveAsync(vm.Config);
         }
 
-        public async Task Rescan()
+        public async Task RescanAsync()
         {
             SelectedConfig = null;
             HoveredConfig = null;
-            await configService.ReloadConfigs();
+            await configService.ReloadConfigsAsync();
             CreateCollection();
         }
 

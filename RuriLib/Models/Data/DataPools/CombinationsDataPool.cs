@@ -8,6 +8,8 @@ namespace RuriLib.Models.Data.DataPools
         public string CharSet { get; private set; }
         public int Length { get; private set; }
 
+        public readonly int POOL_CODE = -4;
+
         /// <summary>
         /// Creates a DataPool by generating all the possible combinations of a string.
         /// </summary>
@@ -25,6 +27,14 @@ namespace RuriLib.Models.Data.DataPools
             var sizeDouble = Math.Pow(charSet.Length, length);
             Size = sizeDouble < long.MaxValue ? (long)sizeDouble : long.MaxValue;
             WordlistType = wordlistType;
+        }
+        
+        /// <inheritdoc/>
+        public override void Reload()
+        {
+            DataList = CharSet.Select(x => x.ToString());
+            for (var i = 0; i < Length - 1; i++)
+                DataList = DataList.SelectMany(x => CharSet, (x, y) => x + y);
         }
     }
 }

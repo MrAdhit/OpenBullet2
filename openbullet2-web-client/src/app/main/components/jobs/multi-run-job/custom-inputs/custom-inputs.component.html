@@ -1,0 +1,30 @@
+<div class="container-fluid" *ngIf="questions !== null && answers !== null">
+    <div class="row mt-2" *ngFor="let question of questions; let i = index">
+        <div class="col-12">
+            <div class="mb-1">
+                <span class="text-small">
+                    {{ question.description }}
+                </span>
+            </div>
+        </div>
+        <div class="col-12">
+            <p-autoComplete [id]="'question-' + question.variableName"
+                inputStyleClass="w-100"
+                class="d-block w-100"
+                ngDefaultControl
+                [suggestions]="getSuggestions(question)"
+                [completeOnFocus]="true"
+                [showEmptyMessage]="false"
+                spellcheck="false"
+                [(ngModel)]="answers[i].answer" />
+        </div>
+    </div>
+    <div class="row mt-4 mb-2">
+        <div class="col-12">
+            <button class="button button-accent float-right" 
+                (click)="setCustomInputs()">
+                Confirm
+            </button>
+        </div>
+    </div>
+</div>

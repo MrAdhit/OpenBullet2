@@ -24,7 +24,7 @@ namespace RuriLib.Blocks.Puppeteer.Page
             {
                 Timeout = timeout,
                 Referer = referer,
-                WaitUntil = new WaitUntilNavigation[] { loadedEvent }
+                WaitUntil = [loadedEvent]
             };
             var response = await page.GoToAsync(url, options);
             data.ADDRESS = response.Url;
@@ -216,15 +216,20 @@ namespace RuriLib.Blocks.Puppeteer.Page
             return dom;
         }
 
-        [Block("Gets the cookies for a given domain from the browser", name = "Get Cookies")]
+        [Block("Gets the cookies for a given domain from the browser. If the domain is empty, gets all cookies from the page.", name = "Get Cookies")]
         public static async Task<Dictionary<string, string>> PuppeteerGetCookies(BotData data, string domain)
         {
             data.Logger.LogHeader();
 
             var page = GetPage(data);
-            var cookies = await page.GetCookiesAsync(domain);
+            var cookies = await page.GetCookiesAsync();
+            
+            if (!string.IsNullOrWhiteSpace(domain))
+            {
+                cookies = cookies.Where(c => c.Domain.Contains(domain, StringComparison.OrdinalIgnoreCase)).ToArray();
+            }
 
-            data.Logger.Log($"Got {cookies.Length} cookies for {domain}", LogColors.DarkSalmon);
+            data.Logger.Log($"Got {cookies.Length} cookies for {(string.IsNullOrWhiteSpace(domain) ? "all domains" : domain)}", LogColors.DarkSalmon);
             return cookies.ToDictionary(c => c.Name, c => c.Value);
         }
 
@@ -260,7 +265,7 @@ namespace RuriLib.Blocks.Puppeteer.Page
         }
 
         [Block("Evaluates a js expression in the current page and returns a json response", name = "Execute JS")]
-        public static async Task<string> PuppeteerExecuteJs(BotData data, string expression)
+        public static async Task<string> PuppeteerExecuteJs(BotData data, [MultiLine] string expression)
         {
             data.Logger.LogHeader();
 
@@ -307,8 +312,8 @@ namespace RuriLib.Blocks.Puppeteer.Page
             data.Logger.Log(data.SOURCE, LogColors.GreenYellow, true);
         }
 
-        private static PuppeteerSharp.Page GetPage(BotData data)
-            => data.TryGetObject<PuppeteerSharp.Page>("puppeteerPage") ?? throw new Exception("No pages open!");
+        private static IPage GetPage(BotData data)
+            => data.TryGetObject<IPage>("puppeteerPage") ?? throw new Exception("No pages open!");
 
         private static void SwitchToMainFramePrivate(BotData data)
             => data.SetObject("puppeteerFrame", GetPage(data).MainFrame);

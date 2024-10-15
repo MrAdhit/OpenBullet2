@@ -72,8 +72,9 @@ namespace OpenBullet2.Native.Views.Pages
         private void SelectBlock(object sender)
         {
             var ctrl = Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl);
+            var shift = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
             var block = (BlockViewModel)(sender as FrameworkElement).Tag;
-            vm.SelectBlock(block, ctrl);
+            vm.SelectBlock(block, ctrl, shift);
         }
 
         private void SelectionChanged(IEnumerable<BlockViewModel> selected)
@@ -106,7 +107,7 @@ namespace OpenBullet2.Native.Views.Pages
             // Save on CTRL+S
             if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.S)
             {
-                await configRepo.Save(configService.SelectedConfig);
+                await configRepo.SaveAsync(configService.SelectedConfig);
                 Alert.Success("Saved", $"{configService.SelectedConfig.Metadata.Name} was saved successfully!");
             }
         }

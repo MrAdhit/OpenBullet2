@@ -9,10 +9,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Security.Cryptography.X509Certificates;
 using RuriLib.Proxies;
+using RuriLib.Proxies.Clients;
 using RuriLib.Proxies.Exceptions;
 using System.Collections.Generic;
 using RuriLib.Http.Models;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace RuriLib.Http
 {
@@ -113,15 +115,17 @@ namespace RuriLib.Http
 
         /// <summary>
         /// Creates a new instance of <see cref="RLHttpClient"/> given a <paramref name="proxyClient"/>.
+        /// If <paramref name="proxyClient"/> is null, <see cref="NoProxyClient"/> will be used.
         /// </summary>
-        public RLHttpClient(ProxyClient proxyClient)
+        public RLHttpClient(ProxyClient proxyClient = null)
         {
-            this.proxyClient = proxyClient ?? throw new ArgumentNullException(nameof(proxyClient));
+            this.proxyClient = proxyClient ?? new NoProxyClient();
         }
 
         /// <summary>
         /// Asynchronously sends a <paramref name="request"/> and returns an <see cref="HttpResponse"/>.
         /// </summary>
+        /// <param name="request">The request to send</param>
         /// <param name="cancellationToken">A cancellation token to cancel the operation</param>
         public Task<HttpResponse> SendAsync(HttpRequest request, CancellationToken cancellationToken = default)
             => SendAsync(request, 0, cancellationToken);
@@ -221,8 +225,16 @@ namespace RuriLib.Http
         {
             // Dispose of any previous connection (if we're coming from a redirect)
             tcpClient?.Close();
-            connectionCommonStream?.Dispose();
-            connectionNetworkStream?.Dispose();
+
+            if (connectionCommonStream is not null)
+            {
+                await connectionCommonStream.DisposeAsync().ConfigureAwait(false);
+            }
+            
+            if (connectionNetworkStream is not null)
+            {
+                await connectionNetworkStream.DisposeAsync().ConfigureAwait(false);
+            }
 
             // Get the stream from the proxies TcpClient
             var uri = request.Uri;
@@ -246,10 +258,10 @@ namespace RuriLib.Http
                     if (CertRevocationMode != X509RevocationMode.Online)
                     {
                         sslOptions.RemoteCertificateValidationCallback =
-                            new RemoteCertificateValidationCallback((s, c, ch, e) => { return true; });
+                            (_, _, _, _) => true;
                     }
 
-                    if (UseCustomCipherSuites)
+                    if (UseCustomCipherSuites && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
                         sslOptions.CipherSuitesPolicy = new CipherSuitesPolicy(AllowedCipherSuites);
                     }
@@ -273,6 +285,7 @@ namespace RuriLib.Http
             }
         }
 
+        /// <inheritdoc/>
         public void Dispose()
         {
             tcpClient?.Dispose();

@@ -13,8 +13,8 @@ namespace OpenBullet2.Native.Services
         private readonly string versionFile = "version.txt";
         private readonly Timer timer;
 
-        public Version CurrentVersion { get; private set; } = new(0, 1, 27);
-        public Version RemoteVersion { get; private set; } = new(0, 1, 27);
+        public Version CurrentVersion { get; private set; } = new(0, 3, 2);
+        public Version RemoteVersion { get; private set; } = new(0, 3, 2);
         public bool IsUpdateAvailable => RemoteVersion > CurrentVersion;
         public string CurrentVersionType => CurrentVersion.Major == 0
             ? (CurrentVersion.Minor == 0 ? "Alpha" : "Beta")
@@ -43,11 +43,11 @@ namespace OpenBullet2.Native.Services
             }
 
             // Check for updates once a day
-            timer = new Timer(new TimerCallback(async _ => await FetchRemoteVersion()),
+            timer = new Timer(new TimerCallback(async _ => await FetchRemoteVersionAsync()),
                     null, 0, (int)TimeSpan.FromDays(1).TotalMilliseconds);
         }
 
-        private async Task FetchRemoteVersion()
+        private async Task FetchRemoteVersionAsync()
         {
             var isDebug = false;
 
@@ -74,7 +74,7 @@ namespace OpenBullet2.Native.Services
                     // Take the first and get its name
                     var json = await response.Content.ReadAsStringAsync();
                     var release = JToken.Parse(json);
-                    var releaseName = release["name"].ToString();
+                    var releaseName = release["tag_name"].ToString();
 
                     // Try to parse that name to a Version object
                     RemoteVersion = Version.Parse(releaseName);

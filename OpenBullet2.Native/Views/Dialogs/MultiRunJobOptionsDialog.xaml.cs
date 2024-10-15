@@ -66,13 +66,13 @@ namespace OpenBullet2.Native.Views.Dialogs
         public async void SelectConfig(ConfigViewModel config)
         {
             vm.SelectConfig(config);
-            await vm.TrySetRecord();
+            await vm.TrySetRecordAsync();
         }
 
         public async void SelectWordlist(WordlistEntity entity)
         {
             (vm.DataPoolOptions as WordlistDataPoolOptionsViewModel).SelectWordlist(entity);
-            await vm.TrySetRecord();
+            await vm.TrySetRecordAsync();
         }
 
         private void AddWordlist(object sender, RoutedEventArgs e)
@@ -111,7 +111,7 @@ namespace OpenBullet2.Native.Views.Dialogs
         {
             var ofd = new OpenFileDialog
             {
-                Filter = "Proxy files | *.txt",
+                Filter = "Proxy files or Shell scripts echoing proxies one by one | *.txt;*.bat;*.ps1;*.sh",
                 FilterIndex = 1
             };
 
@@ -271,17 +271,14 @@ namespace OpenBullet2.Native.Views.Dialogs
             }
         }
 
-        public async Task TrySetRecord()
+        public async Task TrySetRecordAsync()
         {
             if (Options.DataPool is WordlistDataPoolOptions wdpo)
             {
                 var record = await recordRepo.GetAll()
                     .FirstOrDefaultAsync(r => r.ConfigId == Options.ConfigId && r.WordlistId == wdpo.WordlistId);
 
-                if (record is not null)
-                {
-                    Skip = record.Checkpoint;
-                }
+                Skip = record?.Checkpoint ?? 0;
             }
         }
 
@@ -614,7 +611,7 @@ namespace OpenBullet2.Native.Views.Dialogs
         public IEnumerable<string> WordlistTypes => rlSettingsService.Environment.WordlistTypes.Select(t => t.Name);
         #endregion
 
-        public Task AddWordlist(WordlistEntity entity) => wordlistRepo.Add(entity);
+        public Task AddWordlist(WordlistEntity entity) => wordlistRepo.AddAsync(entity);
     }
 
     public enum StartConditionMode
@@ -648,7 +645,7 @@ namespace OpenBullet2.Native.Views.Dialogs
 
             if (options.WordlistId != -1)
             {
-                wordlist = wordlistRepo.Get(options.WordlistId).Result;
+                wordlist = wordlistRepo.GetAsync(options.WordlistId).Result;
             }
 
             // If the wordlist was not found (e.g. deleted)

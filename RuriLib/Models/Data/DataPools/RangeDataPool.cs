@@ -10,6 +10,8 @@ namespace RuriLib.Models.Data.DataPools
         public int Step { get; private set; }
         public bool Pad { get; private set; }
 
+        public readonly int POOL_CODE = -3;
+
         /// <summary>
         /// Creates a DataPool by counting numbers from <paramref name="start"/>, increasing
         /// by <paramref name="step"/> for <paramref name="amount"/> times.
@@ -35,6 +37,15 @@ namespace RuriLib.Models.Data.DataPools
         private IEnumerable<long> Range(long min, long max, int step)
         {
             for (var i = min; i <= max; i += step) yield return i;
+        }
+        
+        /// <inheritdoc/>
+        public override void Reload()
+        {
+            var end = Start + Step * (Amount - 1);
+            var maxLength = end.ToString().Length;
+            DataList = Range(Start, end, Step)
+                .Select(i => Pad ? i.ToString().PadLeft(maxLength, '0') : i.ToString());
         }
     }
 }

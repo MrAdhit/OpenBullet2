@@ -7,7 +7,6 @@ using RuriLib.Http.Models;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -63,7 +62,7 @@ namespace RuriLib.Blocks.Requests.Smtp
 
             // Thunderbird autoconfig
             candidates.Clear();
-            var thunderbirdUrl = $"{"https"}://live.mozillamessaging.com/autoconfig/v1.1/{domain}";
+            var thunderbirdUrl = $"https://live.mozillamessaging.com/autoconfig/v1.1/{domain}";
             try
             {
                 var xml = await GetString(data, thunderbirdUrl).ConfigureAwait(false);
@@ -87,8 +86,8 @@ namespace RuriLib.Blocks.Requests.Smtp
 
             // Site autoconfig
             candidates.Clear();
-            var autoconfigUrl = $"{"https"}://autoconfig.{domain}/mail/config-v1.1.xml?emailaddress={email}";
-            var autoconfigUrlUnsecure = $"{"http"}://autoconfig.{domain}/mail/config-v1.1.xml?emailaddress={email}";
+            var autoconfigUrl = $"https://autoconfig.{domain}/mail/config-v1.1.xml?emailaddress={email}";
+            var autoconfigUrlUnsecure = $"http://autoconfig.{domain}/mail/config-v1.1.xml?emailaddress={email}";
             try
             {
                 string xml;
@@ -122,8 +121,8 @@ namespace RuriLib.Blocks.Requests.Smtp
 
             // Site well-known
             candidates.Clear();
-            var wellKnownUrl = $"{"https"}://{domain}/.well-known/autoconfig/mail/config-v1.1.xml";
-            var wellKnownUrlUnsecure = $"{"http"}://{domain}/.well-known/autoconfig/mail/config-v1.1.xml";
+            var wellKnownUrl = $"https://{domain}/.well-known/autoconfig/mail/config-v1.1.xml";
+            var wellKnownUrlUnsecure = $"http://{domain}/.well-known/autoconfig/mail/config-v1.1.xml";
             try
             {
                 string xml;
@@ -182,7 +181,7 @@ namespace RuriLib.Blocks.Requests.Smtp
             candidates.Clear();
             try
             {
-                var mxRecords = await DnsLookup.FromGoogle(domain, "MX", data.Proxy, 30000, data.CancellationToken).ConfigureAwait(false);
+                var mxRecords = await DnsLookup.FromGoogleAsync(domain, "MX", data.Proxy, 30000, data.CancellationToken).ConfigureAwait(false);
                 mxRecords.ForEach(r =>
                 {
                     candidates.Add(new HostEntry(r, 465));
@@ -331,7 +330,7 @@ namespace RuriLib.Blocks.Requests.Smtp
         {
             data.Logger.LogHeader();
 
-            var client = GetAuthenticatedClient(data);
+            var client = GetClient(data);
 
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress(senderName, senderAddress));
@@ -359,7 +358,7 @@ namespace RuriLib.Blocks.Requests.Smtp
         {
             data.Logger.LogHeader();
 
-            var client = GetAuthenticatedClient(data);
+            var client = GetClient(data);
 
             var message = new MimeMessage();
             message.From.AddRange(senders.Select(s => new MailboxAddress(s.Key, s.Value)));
@@ -391,18 +390,6 @@ namespace RuriLib.Blocks.Requests.Smtp
 
         private static SmtpClient GetClient(BotData data)
             => data.TryGetObject<SmtpClient>("smtpClient") ?? throw new Exception("Connect the SMTP client first!");
-
-        private static SmtpClient GetAuthenticatedClient(BotData data)
-        {
-            var client = GetClient(data);
-
-            if (!client.IsAuthenticated)
-            {
-                throw new Exception("Authenticate the SMTP client first!");
-            }
-
-            return client;
-        }
 
         private static IProxyClient MapProxyClient(BotData data)
         {

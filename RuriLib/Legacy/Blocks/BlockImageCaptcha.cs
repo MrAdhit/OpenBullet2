@@ -112,9 +112,9 @@ namespace RuriLib.Legacy.Blocks
             if (Base64)
             {
                 var bytes = Convert.FromBase64String(localUrl);
-                using var imageFile = new FileStream(captchaFile, FileMode.Create);
-                imageFile.Write(bytes, 0, bytes.Length);
-                imageFile.Flush();
+                await using var imageFile = new FileStream(captchaFile, FileMode.Create);
+                await imageFile.WriteAsync(bytes, 0, bytes.Length).ConfigureAwait(false);
+                await imageFile.FlushAsync().ConfigureAwait(false);
             }
             else if (SendScreenshot && File.Exists(screenshotFile))
             {
@@ -153,7 +153,7 @@ namespace RuriLib.Legacy.Blocks
                     data.Logger.Enabled = true;
 
                     // Save the image
-                    File.WriteAllBytes(captchaFile, data.RAWSOURCE);
+                    await File.WriteAllBytesAsync(captchaFile, data.RAWSOURCE).ConfigureAwait(false);
 
                     // Put the old values back
                     data.ADDRESS = oldAddress;
@@ -172,12 +172,10 @@ namespace RuriLib.Legacy.Blocks
             // Now the captcha is inside the file at path 'captchaFile'
 
             var response = "";
-            var bitmap = new Bitmap(captchaFile);
 
             try
             {
-                var converter = new ImageConverter();
-                var bytes = (byte[])converter.ConvertTo(bitmap, typeof(byte[]));
+                var bytes = await File.ReadAllBytesAsync(captchaFile);
 
                 var captchaResponse = await provider.SolveImageCaptchaAsync(Convert.ToBase64String(bytes));
                 response = captchaResponse.Response;
@@ -187,12 +185,8 @@ namespace RuriLib.Legacy.Blocks
                 data.Logger.Log(ex.Message, LogColors.Tomato);
                 throw;
             }
-            finally
-            {
-                bitmap.Dispose();
-            }
 
-            data.Logger.Log($"Succesfully got the response: {response}", LogColors.GreenYellow);
+            data.Logger.Log($"Successfully got the response: {response}", LogColors.GreenYellow);
 
             if (VariableName != string.Empty)
             {
